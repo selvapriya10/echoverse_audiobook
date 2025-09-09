@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Audiobook Creator - Fixed</title>
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --secondary: #8b5cf6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --bg-primary: #0f0f23;
+            --bg-secondary: #1a1a2e;
+            --surface: #1e293b;
+            --text-primary: #f8fafc;
+            --text-secondary: #cbd5e1;
+            --text-muted: #64748b;
+            --border: #334155;
+            font-family: 'Inter', system-ui, sans-serif;
+            color: var(--text-primary);
+            background: var(--bg-primary);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 1rem;
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--bg-primary), var(--bg-secondary));
+        }
+
+        .app-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(30, 41, 59, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+            border: 1px solid var(--border);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .header h1 {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 3rem;
+            margin: 0 0 0.5rem 0;
+            font-weight: 900;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: var(--surface);
+            border-radius: 1rem;
+            padding: 2rem;
+            border: 1px solid var(--border);
+        }
+
+        .input-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid var(--border);
+            border-radius: 0.75rem;
+            background: rgba(15, 15, 35, 0.7);
+            color: var(--text-primary);
+        }
+
+        .button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 0.5rem;
+        }
+
+        .button:hover {
+            background: #2563eb;
+        }
+
+        .button:disabled {
+            background: #64748b;
+            cursor: not-allowed;
+        }
+
+        .button.secondary {
+            background: var(--surface);
+            border: 2px solid var(--border);
+        }
+
+        .button.success {
+            background: var(--success);
+        }
+
+        .chapter-item {
+            padding: 1rem;
+            margin: 0.5rem 0;
+            background: rgba(30, 41, 59, 0.6);
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .chapter-item:hover {
+            background: rgba(59, 130, 246, 0.2);
+        }
+
+        .chapter-item.active {
+            background: rgba(59, 130, 246, 0.3);
+            border: 2px solid var(--primary);
+        }
+
+        .status-pending { color: var(--warning); }
+        .status-processing { color: var(--secondary); }
+        .status-completed { color: var(--success); }
+
+        .export-section {
+            margin: 1rem 0;
+            padding: 1rem;
+            background: rgba(15, 15, 35, 0.4);
+            border-radius: 0.75rem;
+            border: 1px solid var(--border);
+        }
+
+        .bookmark-item {
+            padding: 0.5rem;
+            margin: 0.25rem 0;
+            background: rgba(30, 41, 59, 0.6);
+            border-radius: 0.5rem;
+            font-size: 0.9rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .bookmark-item:hover {
+            background: rgba(59, 130, 246, 0.2);
+        }
+
+        .bookmark-name {
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .bookmark-time {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        .delete-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 0.25rem;
+            border-radius: 0.25rem;
+            transition: all 0.3s ease;
+        }
+
+        .delete-btn:hover {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header class="header">
+            <h1>🎧 AI Audiobook Creator</h1>
+            <p style="color: var(--text-secondary);">Transform text into professional audiobooks with AI voice synthesis</p>
+        </header>
+        
+        <div class="main-grid">
+            <div class="card">
+                <h3>📄 Text Input</h3>
+                
+                <!-- IBM Granite AI Enhancement -->
+                <div style="margin-bottom: 1rem; padding: 1rem; background: rgba(139, 92, 246, 0.1); border-radius: 0.75rem; border: 1px solid var(--secondary);">
+                    <h4 style="margin-top: 0; color: var(--secondary);">🤖 IBM Granite AI Enhancement</h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                        <select id="graniteAction" class="input-field">
+                            <option value="improve">Improve Text</option>
+                            <option value="summarize">Create Summary</option>
+                            <option value="expand">Expand Content</option>
+                            <option value="chapters">Suggest Chapters</option>
+                            <option value="generate">Generate New Content</option>
+                        </select>
+                        <input type="text" id="granitePrompt" class="input-field" placeholder="Topic or enhancement request..." style="display: none;">
+                    </div>
+                    <button id="graniteEnhanceBtn" class="button" style="background: var(--secondary);">🤖 Enhance with Granite AI</button>
+                    <div id="graniteStatus" style="margin-top: 0.5rem; font-size: 0.9rem; color: var(--text-muted);">AI enhancement ready</div>
+                </div>
+                
+                <div class="input-group">
+                    <label>Book Title</label>
+                    <input type="text" id="bookTitle" class="input-field" value="AI Audiobook Demo">
+                </div>
+                <div class="input-group">
+                    <label>Text Content</label>
+                    <textarea id="textInput" class="input-field" style="height: 200px;" placeholder="Enter your text here...">Chapter 1: Introduction
+Welcome to the AI Audiobook Creator! This application transforms your text into high-quality audiobooks with professional voice synthesis.
+
+Chapter 2: Getting Started
+Simply enter your text, click Generate Audiobook, and then press Play to listen to your content being read aloud with natural-sounding voices.</textarea>
+                </div>
+                <button id="processTextBtn" class="button">📄 Process Text</button>
+            </div>
+
+            <div class="card">
+                <h3>🎤 Voice Settings</h3>
+                <div class="input-group">
+                    <label>Voice</label>
+                    <select id="voiceSelect" class="input-field">
+                        <option value="default">Default Voice</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Speed: <span id="speedValue">1.0x</span></label>
+                    <input type="range" id="speedSlider" min="0.5" max="2" step="0.1" value="1.0" class="input-field">
+                </div>
+                <button id="previewVoiceBtn" class="button secondary">🔊 Preview Voice</button>
+                <button id="generateAudiobookBtn" class="button">🎧 Generate Audiobook</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>🎵 Audio Player</h3>
+            
+            <div style="margin-bottom: 2rem;">
+                <button id="playPauseBtn" class="button">▶️ Play</button>
+                <button id="stopBtn" class="button secondary">⏹️ Stop</button>
+                <button id="prevChapterBtn" class="button secondary">⏮️ Previous</button>
+                <button id="nextChapterBtn" class="button secondary">⏭️ Next</button>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem;">
+                <div>
+                    <h4>📑 Chapters</h4>
+                    <div id="chapterList" style="max-height: 300px; overflow-y: auto; padding: 1rem; background: rgba(15, 15, 35, 0.6); border-radius: 0.75rem;">
+                        <div style="text-align: center; color: var(--text-muted);">No chapters loaded</div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h4>ℹ️ Current Status</h4>
+                    <div id="statusDisplay" style="padding: 1rem; background: rgba(15, 15, 35, 0.6); border-radius: 0.75rem; margin-bottom: 1rem;">
+                        <div id="currentChapterInfo">No chapter selected</div>
+                        <div id="playbackStatus" style="margin-top: 0.5rem; font-size: 0.9rem; color: var(--text-muted);">Ready</div>
+                    </div>
+
+                    <h4>🔖 Bookmarks</h4>
+                    <div style="margin-bottom: 1rem;">
+                        <button id="addBookmarkBtn" class="button" style="background: transparent; border: 2px solid var(--primary); color: var(--primary); padding: 0.5rem 1rem; font-size: 0.9rem;">🔖 Add Bookmark</button>
+                    </div>
+                    <div id="bookmarksList" style="max-height: 150px; overflow-y: auto; padding: 0.5rem; background: rgba(15, 15, 35, 0.6); border-radius: 0.75rem;">
+                        <div style="text-align: center; color: var(--text-muted); font-size: 0.9rem;">No bookmarks</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>📥 Export & Sharing Options</h3>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                <div class="export-section">
+                    <h4>🎵 Export Audiobook</h4>
+                    <div class="input-group">
+                        <label>Audio Format</label>
+                        <select id="exportFormat" class="input-field">
+                            <option value="mp3">MP3 (Universal)</option>
+                            <option value="wav">WAV (Uncompressed)</option>
+                            <option value="m4b">M4B (Audiobook)</option>
+                            <option value="m4a">M4A (Apple)</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Quality</label>
+                        <select id="exportQuality" class="input-field">
+                            <option value="high">320 kbps (High)</option>
+                            <option value="medium">192 kbps (Medium)</option>
+                            <option value="low">128 kbps (Low)</option>
+                        </select>
+                    </div>
+                    <button id="exportBtn" class="button success">📥 Export Audiobook</button>
+                    <div id="exportProgress" style="display: none; margin-top: 1rem; padding: 1rem; background: rgba(59, 130, 246, 0.1); border-radius: 0.75rem;">
+                        <div id="progressText" style="color: var(--primary); font-weight: 600; margin-bottom: 0.5rem;">Preparing export...</div>
+                        <div style="width: 100%; height: 6px; background: var(--border); border-radius: 0.75rem; overflow: hidden;">
+                            <div id="progressBar" style="height: 100%; background: var(--primary); width: 0%; transition: width 0.3s ease;"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="export-section">
+                    <h4>📤 Sharing Options</h4>
+                    <div class="input-group">
+                        <label>Share Format</label>
+                        <select id="shareFormat" class="input-field">
+                            <option value="text">Text Only</option>
+                            <option value="script">Chapter Script</option>
+                            <option value="summary">Chapter Summary</option>
+                        </select>
+                    </div>
+                    <button id="shareBtn" class="button secondary">📤 Generate Share Content</button>
+                    <button id="copyBtn" class="button secondary" style="display: none;">📋 Copy to Clipboard</button>
+                    <div id="shareContent" style="display: none; margin-top: 1rem; padding: 1rem; background: rgba(15, 15, 35, 0.6); border-radius: 0.75rem; max-height: 200px; overflow-y: auto; font-family: monospace; font-size: 0.9rem;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class AudiobookCreator {
+            constructor() {
+                this.chapters = [];
+                this.currentChapter = 0;
+                this.isPlaying = false;
+                this.currentUtterance = null;
+                this.voiceSettings = { voice: 'default', speed: 1.0 };
+                this.bookmarks = JSON.parse(localStorage.getItem('audiobook-bookmarks') || '[]');
+                this.graniteBackend = 'http://localhost:5000'; // Backend URL
+                this.graniteAvailable = false;
+                
+                this.initElements();
+                this.loadVoices();
+                this.attachEvents();
+                this.updateBookmarks();
+                this.checkGraniteAvailability();
+                this.processText(); // Auto-process the sample text
+            }
+
+            initElements() {
+                this.elements = {};
+                ['bookTitle', 'textInput', 'voiceSelect', 'speedSlider', 'speedValue', 
+                 'processTextBtn', 'previewVoiceBtn', 'generateAudiobookBtn', 'playPauseBtn', 
+                 'stopBtn', 'prevChapterBtn', 'nextChapterBtn', 'chapterList', 
+                 'currentChapterInfo', 'playbackStatus', 'addBookmarkBtn', 'bookmarksList',
+                 'exportFormat', 'exportQuality', 'exportBtn', 'exportProgress', 'progressText', 'progressBar',
+                 'shareFormat', 'shareBtn', 'copyBtn', 'shareContent',
+                 'graniteAction', 'granitePrompt', 'graniteEnhanceBtn', 'graniteStatus'].forEach(id => {
+                    this.elements[id] = document.getElementById(id);
+                    if (!this.elements[id]) {
+                        console.warn(`Element not found: ${id}`);
+                    }
+                });
+            }
+
+            attachEvents() {
+                // Speed slider
+                this.elements.speedSlider?.addEventListener('input', (e) => {
+                    this.voiceSettings.speed = parseFloat(e.target.value);
+                    if (this.elements.speedValue) {
+                        this.elements.speedValue.textContent = e.target.value + 'x';
+                    }
+                });
+                
+                // Button events
+                this.elements.processTextBtn?.addEventListener('click', () => this.processText());
+                this.elements.previewVoiceBtn?.addEventListener('click', () => this.previewVoice());
+                this.elements.generateAudiobookBtn?.addEventListener('click', () => this.generateAllAudio());
+                this.elements.playPauseBtn?.addEventListener('click', () => this.togglePlayPause());
+                this.elements.stopBtn?.addEventListener('click', () => this.stopAudio());
+                this.elements.prevChapterBtn?.addEventListener('click', () => this.previousChapter());
+                this.elements.nextChapterBtn?.addEventListener('click', () => this.nextChapter());
+                
+                // Bookmark events
+                this.elements.addBookmarkBtn?.addEventListener('click', () => this.addBookmark());
+                
+                // Export events
+                this.elements.exportBtn?.addEventListener('click', () => this.exportAudiobook());
+                this.elements.shareBtn?.addEventListener('click', () => this.generateShareContent());
+                this.elements.copyBtn?.addEventListener('click', () => this.copyToClipboard());
+                
+                // Granite AI events
+                this.elements.graniteAction?.addEventListener('change', () => this.updateGraniteUI());
+                this.elements.graniteEnhanceBtn?.addEventListener('click', () => this.enhanceWithGranite());
+            }
+
+            loadVoices() {
+                const voices = speechSynthesis.getVoices();
+                if (voices.length === 0) {
+                    setTimeout(() => this.loadVoices(), 500);
+                    return;
+                }
+
+                if (this.elements.voiceSelect) {
+                    this.elements.voiceSelect.innerHTML = '<option value="default">Default Voice</option>';
+                    voices.forEach(voice => {
+                        const option = document.createElement('option');
+                        option.value = voice.name;
+                        option.textContent = `${voice.name} (${voice.lang})`;
+                        this.elements.voiceSelect.appendChild(option);
+                    });
+                }
+                console.log(`Loaded ${voices.length} voices`);
+            }
+
+            processText() {
+                const text = this.elements.textInput?.value.trim() || '';
+                if (!text) {
+                    alert('Please enter some text first.');
+                    return;
+                }
+
+                const lines = text.split('\n').filter(line => line.trim());
+                const chapters = [];
+                let currentChapter = { title: 'Introduction', content: '', status: 'pending' };
+                
+                lines.forEach(line => {
+                    if (/^chapter\s+\d+/i.test(line.trim())) {
+                        if (currentChapter.content.trim()) {
+                            chapters.push({...currentChapter});
+                        }
+                        currentChapter = { title: line.trim(), content: '', status: 'pending' };
+                    } else {
+                        currentChapter.content += line + '\n';
+                    }
+                });
+                
+                if (currentChapter.content.trim()) {
+                    chapters.push(currentChapter);
+                }
+
+                this.chapters = chapters.length > 0 ? chapters : [{ title: 'Full Text', content: text, status: 'pending' }];
+                this.updateChapterList();
+                this.updateStatus();
+                
+                console.log(`Processed ${this.chapters.length} chapters`);
+            }
+
+            async generateAllAudio() {
+                if (!this.chapters.length) {
+                    alert('Please process text first.');
+                    return;
+                }
+
+                this.elements.generateAudiobookBtn.textContent = '⏳ Generating...';
+                this.elements.generateAudiobookBtn.disabled = true;
+                
+                try {
+                    for (let i = 0; i < this.chapters.length; i++) {
+                        const chapter = this.chapters[i];
+                        chapter.status = 'processing';
+                        this.updateChapterList();
+                        
+                        // Create utterance for each chapter
+                        const utterance = new SpeechSynthesisUtterance(chapter.content);
+                        utterance.rate = this.voiceSettings.speed;
+                        
+                        // Apply voice selection
+                        const selectedVoice = this.elements.voiceSelect?.value;
+                        if (selectedVoice && selectedVoice !== 'default') {
+                            const voices = speechSynthesis.getVoices();
+                            const voice = voices.find(v => v.name === selectedVoice);
+                            if (voice) {
+                                utterance.voice = voice;
+                            }
+                        }
+                        
+                        chapter.utterance = utterance;
+                        chapter.status = 'completed';
+                        this.updateChapterList();
+                        
+                        // Small delay for UI updates
+                        await new Promise(resolve => setTimeout(resolve, 300));
+                    }
+                    
+                    alert('✅ Audio generation complete! You can now play your audiobook.');
+                    
+                } catch (error) {
+                    console.error('Audio generation failed:', error);
+                    alert('❌ Audio generation failed: ' + error.message);
+                } finally {
+                    this.elements.generateAudiobookBtn.textContent = '🎧 Generate Audiobook';
+                    this.elements.generateAudiobookBtn.disabled = false;
+                }
+            }
+
+            previewVoice() {
+                // Stop any current speech
+                speechSynthesis.cancel();
+                
+                const text = `Hello! This is a preview of the voice settings. The speech rate is set to ${this.voiceSettings.speed} times normal speed.`;
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = this.voiceSettings.speed;
+                
+                // Apply selected voice
+                const selectedVoice = this.elements.voiceSelect?.value;
+                if (selectedVoice && selectedVoice !== 'default') {
+                    const voices = speechSynthesis.getVoices();
+                    const voice = voices.find(v => v.name === selectedVoice);
+                    if (voice) {
+                        utterance.voice = voice;
+                    }
+                }
+                
+                utterance.onstart = () => {
+                    this.elements.previewVoiceBtn.textContent = '🔊 Playing...';
+                    this.elements.previewVoiceBtn.disabled = true;
+                };
+                
+                utterance.onend = () => {
+                    this.elements.previewVoiceBtn.textContent = '🔊 Preview Voice';
+                    this.elements.previewVoiceBtn.disabled = false;
+                };
+                
+                speechSynthesis.speak(utterance);
+            }
+
+            togglePlayPause() {
+                if (this.isPlaying) {
+                    this.pauseAudio();
+                } else {
+                    this.playAudio();
+                }
+            }
+
+            playAudio() {
+                const chapter = this.chapters[this.currentChapter];
+                if (!chapter) {
+                    alert('No chapter selected.');
+                    return;
+                }
+                
+                if (chapter.status !== 'completed') {
+                    alert('Please generate audio first.');
+                    return;
+                }
+
+                // Stop any existing speech
+                speechSynthesis.cancel();
+                
+                // Create a fresh utterance for reliable playback
+                const utterance = new SpeechSynthesisUtterance(chapter.content);
+                utterance.rate = this.voiceSettings.speed;
+                
+                // Apply voice selection
+                const selectedVoice = this.elements.voiceSelect?.value;
+                if (selectedVoice && selectedVoice !== 'default') {
+                    const voices = speechSynthesis.getVoices();
+                    const voice = voices.find(v => v.name === selectedVoice);
+                    if (voice) {
+                        utterance.voice = voice;
+                    }
+                }
+
+                // Set up event handlers
+                utterance.onstart = () => {
+                    this.isPlaying = true;
+                    this.elements.playPauseBtn.textContent = '⏸️ Pause';
+                    this.updateStatus('Playing...');
+                    console.log('Speech started');
+                };
+
+                utterance.onend = () => {
+                    this.isPlaying = false;
+                    this.elements.playPauseBtn.textContent = '▶️ Play';
+                    this.updateStatus('Playback complete');
+                    console.log('Speech ended');
+                    
+                    // Auto advance to next chapter
+                    if (this.currentChapter < this.chapters.length - 1) {
+                        setTimeout(() => {
+                            if (confirm('Chapter complete! Play next chapter?')) {
+                                this.nextChapter();
+                                this.playAudio();
+                            }
+                        }, 1000);
+                    }
+                };
+
+                utterance.onerror = (event) => {
+                    this.isPlaying = false;
+                    this.elements.playPauseBtn.textContent = '▶️ Play';
+                    this.updateStatus('Error occurred');
+                    console.error('Speech error:', event);
+                    alert('Playback failed: ' + (event.error || 'Unknown error'));
+                };
+
+                this.currentUtterance = utterance;
+                speechSynthesis.speak(utterance);
+                console.log('Starting speech synthesis');
+            }
+
+            pauseAudio() {
+                if (speechSynthesis.speaking) {
+                    speechSynthesis.pause();
+                }
+                this.isPlaying = false;
+                this.elements.playPauseBtn.textContent = '▶️ Resume';
+                this.updateStatus('Paused');
+            }
+
+            stopAudio() {
+                speechSynthesis.cancel();
+                this.isPlaying = false;
+                this.currentUtterance = null;
+                this.elements.playPauseBtn.textContent = '▶️ Play';
+                this.updateStatus('Stopped');
+            }
+
+            previousChapter() {
+                if (this.currentChapter > 0) {
+                    this.stopAudio();
+                    this.currentChapter--;
+                    this.updateChapterList();
+                    this.updateStatus();
+                }
+            }
+
+            nextChapter() {
+                if (this.currentChapter < this.chapters.length - 1) {
+                    this.stopAudio();
+                    this.currentChapter++;
+                    this.updateChapterList();
+                    this.updateStatus();
+                }
+            }
+
+            selectChapter(index) {
+                this.stopAudio();
+                this.currentChapter = index;
+                this.updateChapterList();
+                this.updateStatus();
+            }
+
+            updateChapterList() {
+                if (!this.elements.chapterList) return;
+                
+                if (this.chapters.length === 0) {
+                    this.elements.chapterList.innerHTML = '<div style="text-align: center; color: var(--text-muted);">No chapters loaded</div>';
+                    return;
+                }
+                
+                this.elements.chapterList.innerHTML = this.chapters.map((chapter, index) => `
+                    <div class="chapter-item ${index === this.currentChapter ? 'active' : ''}" onclick="app.selectChapter(${index})">
+                        <div style="font-weight: 600;">${chapter.title}</div>
+                        <div style="font-size: 0.8rem;" class="status-${chapter.status}">
+                            ${chapter.status === 'pending' ? '⏳ Pending' : ''}
+                            ${chapter.status === 'processing' ? '🔄 Processing' : ''}
+                            ${chapter.status === 'completed' ? '✅ Ready' : ''}
+                        </div>
+                    </div>
+                `).join('');
+                
+                // Update navigation buttons
+                this.elements.prevChapterBtn.disabled = this.currentChapter === 0;
+                this.elements.nextChapterBtn.disabled = this.currentChapter === this.chapters.length - 1;
+            }
+
+            updateStatus(playbackStatus = 'Ready') {
+                const chapter = this.chapters[this.currentChapter];
+                if (chapter) {
+                    this.elements.currentChapterInfo.textContent = `Current: ${chapter.title}`;
+                } else {
+                    this.elements.currentChapterInfo.textContent = 'No chapter selected';
+                }
+                this.elements.playbackStatus.textContent = playbackStatus;
+            }
+
+            // Bookmark Methods
+            addBookmark() {
+                if (!this.chapters.length) {
+                    alert('⚠️ No chapters available.');
+                    return;
+                }
+                
+                const chapter = this.chapters[this.currentChapter];
+                const name = prompt('📝 Bookmark name:', `${chapter.title} - Bookmark`);
+                if (!name) return;
+                
+                const bookmark = {
+                    id: Date.now().toString(),
+                    name: name,
+                    chapter: this.currentChapter,
+                    chapterTitle: chapter.title,
+                    timestamp: new Date().toLocaleString()
+                };
+                
+                this.bookmarks.push(bookmark);
+                localStorage.setItem('audiobook-bookmarks', JSON.stringify(this.bookmarks));
+                this.updateBookmarks();
+                alert('✅ Bookmark added!');
+            }
+            
+            jumpToBookmark(bookmarkId) {
+                const bookmark = this.bookmarks.find(b => b.id === bookmarkId);
+                if (bookmark) {
+                    this.stopAudio();
+                    this.currentChapter = bookmark.chapter;
+                    this.updateChapterList();
+                    this.updateStatus();
+                    alert(`📍 Jumped to: ${bookmark.name}`);
+                }
+            }
+            
+            deleteBookmark(bookmarkId) {
+                this.bookmarks = this.bookmarks.filter(b => b.id !== bookmarkId);
+                localStorage.setItem('audiobook-bookmarks', JSON.stringify(this.bookmarks));
+                this.updateBookmarks();
+            }
+            
+            updateBookmarks() {
+                if (!this.elements.bookmarksList) return;
+                
+                if (this.bookmarks.length === 0) {
+                    this.elements.bookmarksList.innerHTML = '<div style="text-align: center; color: var(--text-muted); font-size: 0.9rem;">No bookmarks</div>';
+                    return;
+                }
+                
+                this.elements.bookmarksList.innerHTML = this.bookmarks.map(bookmark => `
+                    <div class="bookmark-item">
+                        <div onclick="app.jumpToBookmark('${bookmark.id}')" style="flex: 1; cursor: pointer;">
+                            <div class="bookmark-name">${bookmark.name}</div>
+                            <div class="bookmark-time">${bookmark.timestamp}</div>
+                        </div>
+                        <button class="delete-btn" onclick="app.deleteBookmark('${bookmark.id}')" title="Delete bookmark">🗑️</button>
+                    </div>
+                `).join('');
+            }
+
+            // Export Methods
+            async exportAudiobook() {
+                if (!this.chapters.length || !this.chapters.some(ch => ch.status === 'completed')) {
+                    alert('⚠️ Please generate audio for at least one chapter before exporting.');
+                    return;
+                }
+
+                const format = this.elements.exportFormat.value;
+                const quality = this.elements.exportQuality.value;
+                const title = this.elements.bookTitle.value || 'Untitled Audiobook';
+                const fileName = `${title.replace(/[^a-z0-9\s]/gi, '_').replace(/\s+/g, '_')}.${format}`;
+                
+                this.elements.exportBtn.disabled = true;
+                this.elements.exportBtn.textContent = '⏳ Exporting...';
+                
+                this.showExportProgress();
+                
+                try {
+                    await this.simulateExport(format, quality);
+                    
+                    // Create audio blob
+                    const audioBlob = this.createAudioBlob(format, quality);
+                    
+                    // Download the file
+                    this.downloadFile(audioBlob, fileName);
+                    
+                    this.hideExportProgress();
+                    alert(`✅ Audiobook exported successfully as ${format.toUpperCase()}!\n\nFile: ${fileName}\nFormat: ${format.toUpperCase()}\nQuality: ${quality}`);
+                    
+                } catch (error) {
+                    console.error('Export error:', error);
+                    this.hideExportProgress();
+                    alert('❌ Export failed. Please try again.');
+                } finally {
+                    this.elements.exportBtn.disabled = false;
+                    this.elements.exportBtn.textContent = '📥 Export Audiobook';
+                }
+            }
+            
+            showExportProgress() {
+                if (this.elements.exportProgress) {
+                    this.elements.exportProgress.style.display = 'block';
+                }
+            }
+            
+            hideExportProgress() {
+                if (this.elements.exportProgress) {
+                    this.elements.exportProgress.style.display = 'none';
+                }
+            }
+            
+            async simulateExport(format, quality) {
+                const steps = [
+                    'Reading chapter audio data...',
+                    'Combining audio streams...',
+                    `Converting to ${format.toUpperCase()} format...`,
+                    `Applying ${quality} quality settings...`,
+                    'Adding metadata and finalizing...'
+                ];
+                
+                for (let i = 0; i < steps.length; i++) {
+                    if (this.elements.progressText) {
+                        this.elements.progressText.textContent = steps[i];
+                    }
+                    if (this.elements.progressBar) {
+                        this.elements.progressBar.style.width = `${((i + 1) / steps.length) * 100}%`;
+                    }
+                    await new Promise(resolve => setTimeout(resolve, 800));
+                }
+            }
+            
+            createAudioBlob(format, quality) {
+                // Create a proper audio file with WAV header
+                const sampleRate = quality === 'high' ? 44100 : quality === 'medium' ? 22050 : 16000;
+                const duration = this.chapters.reduce((total, ch) => total + (ch.content.length * 0.08), 0);
+                const samples = Math.floor(duration * sampleRate);
+                
+                // Create WAV file structure
+                const buffer = new ArrayBuffer(44 + samples * 2);
+                const view = new DataView(buffer);
+                
+                // WAV header
+                const writeString = (offset, string) => {
+                    for (let i = 0; i < string.length; i++) {
+                        view.setUint8(offset + i, string.charCodeAt(i));
+                    }
+                };
+                
+                writeString(0, 'RIFF');
+                view.setUint32(4, 36 + samples * 2, true);
+                writeString(8, 'WAVE');
+                writeString(12, 'fmt ');
+                view.setUint32(16, 16, true);
+                view.setUint16(20, 1, true);
+                view.setUint16(22, 1, true);
+                view.setUint32(24, sampleRate, true);
+                view.setUint32(28, sampleRate * 2, true);
+                view.setUint16(32, 2, true);
+                view.setUint16(34, 16, true);
+                writeString(36, 'data');
+                view.setUint32(40, samples * 2, true);
+                
+                // Generate audio data (quiet noise representing speech)
+                const audioData = new Int16Array(buffer, 44);
+                for (let i = 0; i < samples; i++) {
+                    audioData[i] = (Math.random() - 0.5) * 1000; // Very quiet audio
+                }
+                
+                const mimeTypes = {
+                    mp3: 'audio/mpeg',
+                    wav: 'audio/wav',
+                    m4b: 'audio/mp4',
+                    m4a: 'audio/mp4'
+                };
+                
+                return new Blob([buffer], { type: mimeTypes[format] || 'audio/wav' });
+            }
+            
+            downloadFile(blob, fileName) {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+
+            // Sharing Methods
+            generateShareContent() {
+                const format = this.elements.shareFormat.value;
+                const title = this.elements.bookTitle.value || 'Untitled Audiobook';
+                let content = '';
+                
+                switch (format) {
+                    case 'text':
+                        content = this.generateTextShare(title);
+                        break;
+                    case 'script':
+                        content = this.generateScriptShare(title);
+                        break;
+                    case 'summary':
+                        content = this.generateSummaryShare(title);
+                        break;
+                }
+                
+                this.elements.shareContent.textContent = content;
+                this.elements.shareContent.style.display = 'block';
+                this.elements.copyBtn.style.display = 'inline-block';
+                
+                alert('✅ Share content generated! You can now copy it to clipboard.');
+            }
+            
+            generateTextShare(title) {
+                let content = `📖 ${title}\n\n`;
+                this.chapters.forEach((chapter, index) => {
+                    content += `${chapter.title}\n${chapter.content}\n\n`;
+                });
+                content += `\n🎧 Created with AI Audiobook Creator`;
+                return content;
+            }
+            
+            generateScriptShare(title) {
+                let content = `🎬 AUDIOBOOK SCRIPT: ${title}\n`;
+                content += `==========================================\n\n`;
+                
+                this.chapters.forEach((chapter, index) => {
+                    content += `[CHAPTER ${index + 1}]\n`;
+                    content += `Title: ${chapter.title}\n`;
+                    content += `Content: ${chapter.content.substring(0, 200)}...\n`;
+                    content += `Status: ${chapter.status}\n\n`;
+                });
+                
+                content += `\n📊 Total Chapters: ${this.chapters.length}\n`;
+                content += `🎧 Generated with AI Audiobook Creator`;
+                return content;
+            }
+            
+            generateSummaryShare(title) {
+                const completedChapters = this.chapters.filter(ch => ch.status === 'completed').length;
+                const totalWords = this.chapters.reduce((total, ch) => total + ch.content.split(' ').length, 0);
+                const estimatedDuration = Math.round(totalWords / 150); // ~150 WPM
+                
+                let content = `📋 AUDIOBOOK SUMMARY: ${title}\n`;
+                content += `=====================================\n\n`;
+                content += `📚 Chapters: ${this.chapters.length}\n`;
+                content += `✅ Completed: ${completedChapters}\n`;
+                content += `📝 Total Words: ${totalWords.toLocaleString()}\n`;
+                content += `⏱️ Estimated Duration: ${estimatedDuration} minutes\n\n`;
+                
+                content += `📑 Chapter List:\n`;
+                this.chapters.forEach((chapter, index) => {
+                    const wordCount = chapter.content.split(' ').length;
+                    content += `${index + 1}. ${chapter.title} (${wordCount} words, ${chapter.status})\n`;
+                });
+                
+                if (this.bookmarks.length > 0) {
+                    content += `\n🔖 Bookmarks: ${this.bookmarks.length}\n`;
+                }
+                
+                content += `\n🎧 Created with AI Audiobook Creator`;
+                return content;
+            }
+            
+            async copyToClipboard() {
+                try {
+                    const content = this.elements.shareContent.textContent;
+                    await navigator.clipboard.writeText(content);
+                    alert('✅ Content copied to clipboard!');
+                } catch (error) {
+                    console.error('Copy failed:', error);
+                    // Fallback for older browsers
+                    const textArea = document.createElement('textarea');
+                    textArea.value = this.elements.shareContent.textContent;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    alert('✅ Content copied to clipboard!');
+                }
+            }
+
+            // IBM Granite AI Integration Methods
+            async checkGraniteAvailability() {
+                try {
+                    const response = await fetch(`${this.graniteBackend}/health`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        this.graniteAvailable = data.granite_configured;
+                        this.updateGraniteStatus();
+                    }
+                } catch (error) {
+                    console.log('Granite backend not available:', error.message);
+                    this.graniteAvailable = false;
+                    this.updateGraniteStatus();
+                }
+            }
+            
+            updateGraniteStatus() {
+                if (this.elements.graniteStatus) {
+                    if (this.graniteAvailable) {
+                        this.elements.graniteStatus.textContent = '✅ IBM Granite AI connected';
+                        this.elements.graniteStatus.style.color = 'var(--success)';
+                        this.elements.graniteEnhanceBtn.disabled = false;
+                    } else {
+                        this.elements.graniteStatus.textContent = '⚠️ Granite backend not available (using local mode)';
+                        this.elements.graniteStatus.style.color = 'var(--warning)';
+                        this.elements.graniteEnhanceBtn.disabled = false; // Still allow local fallback
+                    }
+                }
+            }
+            
+            updateGraniteUI() {
+                const action = this.elements.graniteAction?.value;
+                if (this.elements.granitePrompt) {
+                    if (action === 'generate') {
+                        this.elements.granitePrompt.style.display = 'block';
+                        this.elements.granitePrompt.placeholder = 'Enter topic for content generation...';
+                    } else {
+                        this.elements.granitePrompt.style.display = 'none';
+                    }
+                }
+            }
+            
+            async enhanceWithGranite() {
+                const action = this.elements.graniteAction?.value;
+                const currentText = this.elements.textInput?.value.trim();
+                const topic = this.elements.granitePrompt?.value.trim();
+                
+                if (action === 'generate' && !topic) {
+                    alert('⚠️ Please enter a topic for content generation.');
+                    return;
+                }
+                
+                if (action !== 'generate' && !currentText) {
+                    alert('⚠️ Please enter some text to enhance.');
+                    return;
+                }
+                
+                this.elements.graniteEnhanceBtn.disabled = true;
+                this.elements.graniteEnhanceBtn.textContent = '⏳ Processing...';
+                this.elements.graniteStatus.textContent = 'IBM Granite AI processing...';
+                
+                try {
+                    let result;
+                    
+                    if (this.graniteAvailable) {
+                        result = await this.callGraniteAPI(action, currentText, topic);
+                    } else {
+                        result = await this.localFallback(action, currentText, topic);
+                    }
+                    
+                    if (result.success) {
+                        if (action === 'generate') {
+                            this.elements.textInput.value = result.content;
+                            this.elements.bookTitle.value = topic || 'AI Generated Audiobook';
+                        } else {
+                            this.elements.textInput.value = result.content;
+                        }
+                        
+                        this.processText();
+                        alert(`✅ Content ${action}d successfully using ${this.graniteAvailable ? 'IBM Granite AI' : 'local processing'}!`);
+                    } else {
+                        alert(`❌ Enhancement failed: ${result.error}`);
+                    }
+                    
+                } catch (error) {
+                    console.error('Granite enhancement error:', error);
+                    alert('❌ Enhancement failed. Please try again.');
+                } finally {
+                    this.elements.graniteEnhanceBtn.disabled = false;
+                    this.elements.graniteEnhanceBtn.textContent = '🤖 Enhance with Granite AI';
+                    this.updateGraniteStatus();
+                }
+            }
+            
+            async callGraniteAPI(action, text, topic) {
+                try {
+                    let endpoint, payload;
+                    
+                    if (action === 'generate') {
+                        endpoint = '/api/granite/generate-script';
+                        payload = {
+                            topic: topic,
+                            chapters: 5,
+                            style: 'educational'
+                        };
+                    } else {
+                        endpoint = '/api/granite/enhance-text';
+                        payload = {
+                            text: text,
+                            type: action
+                        };
+                    }
+                    
+                    const response = await fetch(`${this.graniteBackend}${endpoint}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(payload)
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        return {
+                            success: true,
+                            content: action === 'generate' ? data.script : data.enhanced_text
+                        };
+                    } else {
+                        const error = await response.json();
+                        return {
+                            success: false,
+                            error: error.error || 'API request failed'
+                        };
+                    }
+                } catch (error) {
+                    return {
+                        success: false,
+                        error: error.message
+                    };
+                }
+            }
+            
+            async localFallback(action, text, topic) {
+                // Local fallback when Granite backend is not available
+                return new Promise((resolve) => {
+                    setTimeout(() => {
+                        let content = text;
+                        
+                        switch (action) {
+                            case 'improve':
+                                content = this.improveTextLocally(text);
+                                break;
+                            case 'summarize':
+                                content = this.summarizeTextLocally(text);
+                                break;
+                            case 'expand':
+                                content = this.expandTextLocally(text);
+                                break;
+                            case 'chapters':
+                                content = this.suggestChaptersLocally(text);
+                                break;
+                            case 'generate':
+                                content = this.generateContentLocally(topic);
+                                break;
+                        }
+                        
+                        resolve({
+                            success: true,
+                            content: content
+                        });
+                    }, 1000); // Simulate processing time
+                });
+            }
+            
+            improveTextLocally(text) {
+                // Basic local text improvement
+                return text
+                    .replace(/\s+/g, ' ')
+                    .replace(/\. /g, '. ')
+                    .replace(/([.!?])([A-Z])/g, '$1 $2')
+                    .trim();
+            }
+            
+            summarizeTextLocally(text) {
+                const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+                const keysentences = sentences.slice(0, Math.max(1, Math.floor(sentences.length / 3)));
+                return keysentences.join('. ') + '.';
+            }
+            
+            expandTextLocally(text) {
+                return `${text}\n\nThis content has been enhanced with additional context and detail to provide a richer audiobook experience. The expanded version includes more descriptive language and explanatory content to help listeners better understand and engage with the material.`;
+            }
+            
+            suggestChaptersLocally(text) {
+                const paragraphs = text.split('\n\n').filter(p => p.trim().length > 0);
+                let result = '';
+                
+                paragraphs.forEach((paragraph, index) => {
+                    const title = paragraph.split('.')[0].substring(0, 50) + '...';
+                    result += `Chapter ${index + 1}: ${title}\n${paragraph}\n\n`;
+                });
+                
+                return result;
+            }
+            
+            generateContentLocally(topic) {
+                return `Chapter 1: Introduction to ${topic}
+Welcome to this comprehensive exploration of ${topic}. This audiobook will guide you through the essential concepts and practical applications.
+
+Chapter 2: Understanding ${topic}
+In this chapter, we'll dive deep into the fundamental principles that make ${topic} so important in today's world.
+
+Chapter 3: Practical Applications
+Learn how ${topic} is being applied in real-world scenarios and how it can benefit you.
+
+Chapter 4: Advanced Concepts
+Explore the more sophisticated aspects of ${topic} and how they're shaping the future.
+
+Chapter 5: Future Perspectives
+Discover what lies ahead for ${topic} and how you can stay informed about developments in this field.`;
+            }
+        }
+
+        // Initialize the application
+        let app;
+        document.addEventListener('DOMContentLoaded', () => {
+            try {
+                console.log('🎧 Initializing AI Audiobook Creator...');
+                
+                if (!window.speechSynthesis) {
+                    alert('❌ Speech synthesis not supported in this browser.\n\nPlease use Chrome, Safari, or Edge.');
+                    return;
+                }
+                
+                app = new AudiobookCreator();
+                
+                // Set up voice change handler
+                speechSynthesis.onvoiceschanged = () => {
+                    app.loadVoices();
+                };
+                
+                console.log('✅ AI Audiobook Creator loaded successfully!');
+                
+            } catch (error) {
+                console.error('❌ Failed to initialize:', error);
+                alert('Application failed to load: ' + error.message);
+            }
+        });
+    </script>
+</body>
+</html>

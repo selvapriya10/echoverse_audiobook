@@ -1,0 +1,1061 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced AI Audiobook Creator - Tone Adaptive</title>
+    <style>
+        :root {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            --primary-color: #2563eb;
+            --secondary-color: #3b82f6;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --neutral-color: #6b7280;
+            --background-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --card-background: rgba(255, 255, 255, 0.95);
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --border-color: #e5e7eb;
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 1rem;
+            min-height: 100vh;
+            background: var(--background-gradient);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .app-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: var(--card-background);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            min-height: 90vh;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .header h1 {
+            color: var(--primary-color);
+            font-size: 2.8rem;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        @media (max-width: 1200px) {
+            .main-grid { grid-template-columns: 1fr; }
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid var(--border-color);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .text-input {
+            width: 100%;
+            height: 200px;
+            padding: 1rem;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9rem;
+            resize: vertical;
+            transition: all 0.3s ease;
+        }
+
+        .text-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .tone-selector {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .tone-option {
+            padding: 1rem;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .tone-option:hover {
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+        }
+
+        .tone-option.active {
+            border-color: var(--primary-color);
+            background: rgba(37, 99, 235, 0.1);
+        }
+
+        .tone-neutral { border-left: 4px solid var(--neutral-color); }
+        .tone-suspenseful { border-left: 4px solid var(--warning-color); }
+        .tone-inspiring { border-left: 4px solid var(--success-color); }
+
+        .comparison-view {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .comparison-panel {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            background: #f9fafb;
+        }
+
+        .comparison-label {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            font-size: 0.8rem;
+        }
+
+        .voice-controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            justify-content: center;
+        }
+
+        .button:hover {
+            background: var(--secondary-color);
+            transform: translateY(-1px);
+        }
+
+        .button:disabled {
+            background: var(--neutral-color);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .button.success { background: var(--success-color); }
+        .button.warning { background: var(--warning-color); }
+        .button.danger { background: var(--danger-color); }
+
+        .audio-player {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .status-indicator {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .status-processing { background: #dbeafe; color: #1e40af; }
+        .status-completed { background: #d1fae5; color: #065f46; }
+        .status-error { background: #fee2e2; color: #dc2626; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header class="header">
+            <h1>🎭 Advanced AI Audiobook Creator</h1>
+            <p>Tone-Adaptive Text Rewriting with Premium Voice Synthesis</p>
+        </header>
+
+        <div class="main-grid">
+            <!-- Text Input & Tone Selection -->
+            <div class="card">
+                <div class="card-header">📝 Text Input & Tone Selection</div>
+                
+                <textarea
+                    id="originalText"
+                    class="text-input"
+                    placeholder="Paste your text here or upload a file..."
+                ></textarea>
+
+                <div class="tone-selector">
+                    <div class="tone-option tone-neutral" data-tone="neutral">
+                        <div style="font-size: 1.5rem;">😐</div>
+                        <div><strong>Neutral</strong></div>
+                        <small>Clear, factual presentation</small>
+                    </div>
+                    <div class="tone-option tone-suspenseful" data-tone="suspenseful">
+                        <div style="font-size: 1.5rem;">😰</div>
+                        <div><strong>Suspenseful</strong></div>
+                        <small>Dramatic, tension-building</small>
+                    </div>
+                    <div class="tone-option tone-inspiring" data-tone="inspiring">
+                        <div style="font-size: 1.5rem;">🌟</div>
+                        <div><strong>Inspiring</strong></div>
+                        <small>Motivational, uplifting</small>
+                    </div>
+                </div>
+
+                <button id="rewriteBtn" class="button">
+                    🎭 Rewrite with Selected Tone
+                </button>
+            </div>
+
+            <!-- Voice & Audio Controls -->
+            <div class="card">
+                <div class="card-header">🎤 Voice & Audio Controls</div>
+                
+                <div class="voice-controls">
+                    <div class="control-group">
+                        <label>Voice:</label>
+                        <select id="voiceSelect" class="text-input" style="height: auto; padding: 0.5rem;">
+                            <option value="auto">🤖 Auto-Select Best Voice</option>
+                            <optgroup label="🎭 Premium Voices">
+                                <option value="lisa">👩 Lisa (Female - Friendly)</option>
+                                <option value="michael">👨 Michael (Male - Professional)</option>
+                                <option value="allison">👩 Allison (Female - Expressive)</option>
+                                <option value="david">👨 David (Male - Authoritative)</option>
+                                <option value="sarah">👩 Sarah (Female - Warm)</option>
+                                <option value="james">👨 James (Male - Narrator)</option>
+                            </optgroup>
+                            <optgroup label="🌍 System Voices" id="systemVoices">
+                                <!-- System voices will be populated dynamically -->
+                            </optgroup>
+                        </select>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label>Speed: <span id="speedValue">1.0</span>x</label>
+                        <input type="range" id="speedSlider" min="0.3" max="3.0" step="0.1" value="1.0">
+                    </div>
+                    
+                    <div class="control-group">
+                        <label>Pitch: <span id="pitchValue">1.0</span></label>
+                        <input type="range" id="pitchSlider" min="0.1" max="2.0" step="0.1" value="1.0">
+                    </div>
+                    
+                    <div class="control-group">
+                        <label>Volume: <span id="volumeValue">80</span>%</label>
+                        <input type="range" id="volumeSlider" min="0" max="100" step="5" value="80">
+                    </div>
+                </div>
+
+                <div class="audio-player">
+                    <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                        <button id="playBtn" class="button">▶️ Play</button>
+                        <button id="pauseBtn" class="button">⏸️ Pause</button>
+                        <button id="stopBtn" class="button">⏹️ Stop</button>
+                        <button id="quickTestBtn" class="button secondary">⚡ Quick Test</button>
+                    </div>
+                    <div style="display: flex; gap: 1rem;">
+                        <button id="downloadBtn" class="button success">💾 Download MP3</button>
+                        <button id="generateBtn" class="button warning">🔊 Generate Audio</button>
+                        <button id="testVoiceBtn" class="button secondary">🎤 Test Voice</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Text Comparison -->
+        <div class="card">
+            <div class="card-header">🔍 Side-by-Side Text Comparison</div>
+            <div class="comparison-view">
+                <div class="comparison-panel">
+                    <div class="comparison-label">Original Text</div>
+                    <div id="originalDisplay" style="min-height: 200px; white-space: pre-wrap;"></div>
+                </div>
+                <div class="comparison-panel">
+                    <div class="comparison-label">Tone-Adapted Text</div>
+                    <div id="rewrittenDisplay" style="min-height: 200px; white-space: pre-wrap;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Area -->
+        <div id="statusArea" style="margin-top: 1rem; text-align: center;">
+            <span id="statusIndicator" class="status-indicator" style="display: none;"></span>
+        </div>
+        
+        <!-- Debug Panel -->
+        <div class="card" style="margin-top: 1rem; background: #f8f9fa;">
+            <div class="card-header">🔧 Debug Information</div>
+            <div id="debugInfo" style="font-family: monospace; font-size: 0.9rem; color: #666;"></div>
+            <button id="debugBtn" class="button secondary" style="margin-top: 0.5rem;">🔍 Check System</button>
+        </div>
+    </div>
+
+    <script>
+        class AdvancedAudiobookCreator {
+            constructor() {
+                this.selectedTone = 'neutral';
+                this.originalText = '';
+                this.rewrittenText = '';
+                this.currentAudio = null;
+                this.isProcessing = false;
+                this.isPlaying = false;
+
+                this.initializeElements();
+                this.attachEventListeners();
+                this.loadSampleText();
+                this.loadVoices();
+                
+                // Run initial diagnostics safely
+                setTimeout(() => {
+                    if (this.elements.debugInfo) {
+                        this.runDiagnostics();
+                    } else {
+                        console.log('Debug panel not available, running basic check');
+                        this.showStatus('System ready - ' + speechSynthesis.getVoices().length + ' voices loaded', 'completed');
+                    }
+                }, 1000);
+            }
+
+            initializeElements() {
+                this.elements = {
+                    originalText: document.getElementById('originalText'),
+                    originalDisplay: document.getElementById('originalDisplay'),
+                    rewrittenDisplay: document.getElementById('rewrittenDisplay'),
+                    rewriteBtn: document.getElementById('rewriteBtn'),
+                    voiceSelect: document.getElementById('voiceSelect'),
+                    speedSlider: document.getElementById('speedSlider'),
+                    pitchSlider: document.getElementById('pitchSlider'),
+                    volumeSlider: document.getElementById('volumeSlider'),
+                    speedValue: document.getElementById('speedValue'),
+                    pitchValue: document.getElementById('pitchValue'),
+                    volumeValue: document.getElementById('volumeValue'),
+                    playBtn: document.getElementById('playBtn'),
+                    pauseBtn: document.getElementById('pauseBtn'),
+                    stopBtn: document.getElementById('stopBtn'),
+                    downloadBtn: document.getElementById('downloadBtn'),
+                    generateBtn: document.getElementById('generateBtn'),
+                    quickTestBtn: document.getElementById('quickTestBtn'),
+                    debugInfo: document.getElementById('debugInfo'),
+                    debugBtn: document.getElementById('debugBtn'),
+                };
+            }
+
+            attachEventListeners() {
+                // Text input
+                this.elements.originalText.addEventListener('input', () => {
+                    this.originalText = this.elements.originalText.value;
+                    this.elements.originalDisplay.textContent = this.originalText;
+                });
+
+                // Tone selection
+                document.querySelectorAll('.tone-option').forEach(option => {
+                    option.addEventListener('click', () => {
+                        document.querySelectorAll('.tone-option').forEach(o => o.classList.remove('active'));
+                        option.classList.add('active');
+                        this.selectedTone = option.dataset.tone;
+                    });
+                });
+
+                // Voice controls
+                this.elements.voiceSelect.addEventListener('change', (e) => {
+                    this.voiceSettings = this.voiceSettings || {};
+                    this.voiceSettings.voice = e.target.value;
+                    this.showVoiceInfo();
+                });
+
+                this.elements.speedSlider.addEventListener('input', (e) => {
+                    this.elements.speedValue.textContent = e.target.value;
+                });
+
+                this.elements.pitchSlider.addEventListener('input', (e) => {
+                    this.elements.pitchValue.textContent = e.target.value;
+                });
+
+                this.elements.volumeSlider.addEventListener('input', (e) => {
+                    this.elements.volumeValue.textContent = e.target.value;
+                });
+
+                // Buttons
+                this.elements.rewriteBtn.addEventListener('click', () => this.rewriteText());
+                this.elements.generateBtn.addEventListener('click', () => this.generateAudio());
+                this.elements.playBtn.addEventListener('click', () => this.playAudio());
+                this.elements.pauseBtn.addEventListener('click', () => this.pauseAudio());
+                this.elements.stopBtn.addEventListener('click', () => this.stopAudio());
+                this.elements.downloadBtn.addEventListener('click', () => this.downloadAudio());
+                this.elements.testVoiceBtn.addEventListener('click', () => this.testVoice());
+                if (this.elements.quickTestBtn) {
+                    this.elements.quickTestBtn.addEventListener('click', () => this.quickTest());
+                }
+                if (this.elements.debugBtn) {
+                    this.elements.debugBtn.addEventListener('click', () => this.runDiagnostics());
+                }
+
+                // Set default tone
+                document.querySelector('.tone-option[data-tone="neutral"]').classList.add('active');
+            }
+
+            loadSampleText() {
+                const sampleText = `The old castle stood majestically on the hill, its ancient stones weathered by centuries of wind and rain. Within its walls, countless stories had unfolded, each leaving an invisible mark on the very essence of the place.
+
+As the sun began to set, casting long shadows across the courtyard, a figure emerged from the main entrance. The person moved with purpose, carrying what appeared to be an old leather-bound book. This was no ordinary book – it contained secrets that had been hidden for generations.
+
+The discovery of this tome would change everything. Its pages held the key to understanding the true history of the castle and the mysterious events that had occurred within its walls. For those brave enough to seek the truth, it promised revelations that would reshape their understanding of the past.`;
+
+                this.elements.originalText.value = sampleText;
+                this.originalText = sampleText;
+                this.elements.originalDisplay.textContent = sampleText;
+            }
+
+            async rewriteText() {
+                if (!this.originalText.trim()) {
+                    this.showStatus('Please enter some text first', 'error');
+                    return;
+                }
+
+                this.setProcessing(true);
+                this.showStatus('Rewriting text with ' + this.selectedTone + ' tone...', 'processing');
+
+                try {
+                    // Simulate AI text rewriting (replace with actual IBM Watsonx API call)
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    
+                    this.rewrittenText = this.simulateTextRewriting(this.originalText, this.selectedTone);
+                    this.elements.rewrittenDisplay.textContent = this.rewrittenText;
+                    
+                    this.showStatus('Text successfully rewritten', 'completed');
+                } catch (error) {
+                    this.showStatus('Error rewriting text: ' + error.message, 'error');
+                } finally {
+                    this.setProcessing(false);
+                }
+            }
+
+            simulateTextRewriting(text, tone) {
+                const toneAdjustments = {
+                    neutral: {
+                        prefix: '',
+                        replacements: {
+                            'majestically': 'prominently',
+                            'ancient': 'old',
+                            'mysterious': 'unexplained'
+                        }
+                    },
+                    suspenseful: {
+                        prefix: '',
+                        replacements: {
+                            'stood majestically': 'loomed ominously',
+                            'ancient stones': 'crumbling stones that seemed to whisper',
+                            'emerged': 'crept out',
+                            'moved with purpose': 'moved with sinister intent',
+                            'discovery': 'shocking revelation',
+                            'mysterious events': 'dark, terrifying incidents',
+                            'brave enough': 'foolish enough to dare'
+                        }
+                    },
+                    inspiring: {
+                        prefix: '',
+                        replacements: {
+                            'stood majestically': 'stood as a beacon of resilience',
+                            'weathered by': 'strengthened by',
+                            'countless stories': 'countless tales of triumph',
+                            'emerged': 'stepped forth confidently',
+                            'discovery': 'magnificent discovery',
+                            'change everything': 'transform lives and inspire generations',
+                            'brave enough': 'courageous enough',
+                            'revelations': 'life-changing insights'
+                        }
+                    }
+                };
+
+                let rewritten = text;
+                const adjustments = toneAdjustments[tone];
+                
+                Object.entries(adjustments.replacements).forEach(([original, replacement]) => {
+                    rewritten = rewritten.replace(new RegExp(original, 'gi'), replacement);
+                });
+
+                return rewritten;
+            }
+
+            async generateAudio() {
+                const textToSpeak = this.rewrittenText.trim() || this.originalText.trim();
+                if (!textToSpeak) {
+                    this.showStatus('Please enter some text first', 'error');
+                    return Promise.reject(new Error('No text available'));
+                }
+
+                this.setProcessing(true);
+                this.showStatus('Generating audio...', 'processing');
+
+                try {
+                    // Wait for voices to load
+                    await this.waitForVoices();
+                    
+                    // Create utterance
+                    const utterance = new SpeechSynthesisUtterance(textToSpeak);
+                    
+                    // Set parameters with validation
+                    utterance.rate = Math.max(0.1, Math.min(10, parseFloat(this.elements.speedSlider.value) || 1.0));
+                    utterance.pitch = Math.max(0, Math.min(2, parseFloat(this.elements.pitchSlider.value) || 1.0));
+                    utterance.volume = Math.max(0, Math.min(1, parseFloat(this.elements.volumeSlider.value) / 100 || 0.8));
+                    
+                    // Set voice based on selection
+                    const selectedVoice = this.selectBestVoice(this.elements.voiceSelect.value);
+                    if (selectedVoice) {
+                        utterance.voice = selectedVoice;
+                        console.log('Selected voice:', selectedVoice.name, selectedVoice.lang);
+                    } else {
+                        console.warn('No voice selected, using default');
+                    }
+
+                    // Add comprehensive event listeners
+                    utterance.onstart = () => {
+                        console.log('Speech synthesis started');
+                        this.isPlaying = true;
+                        this.elements.playBtn.textContent = '⏸️ Pause';
+                        this.showStatus('Playing audio...', 'processing');
+                    };
+                    
+                    utterance.onend = () => {
+                        console.log('Speech synthesis ended');
+                        this.isPlaying = false;
+                        this.elements.playBtn.textContent = '▶️ Play';
+                        this.showStatus('Audio playback completed', 'completed');
+                    };
+                    
+                    utterance.onerror = (event) => {
+                        console.error('Speech synthesis error:', event);
+                        this.isPlaying = false;
+                        this.elements.playBtn.textContent = '▶️ Play';
+                        this.showStatus('Audio error: ' + (event.error || 'Unknown error'), 'error');
+                    };
+
+                    utterance.onpause = () => {
+                        console.log('Speech synthesis paused');
+                        this.isPlaying = false;
+                        this.elements.playBtn.textContent = '▶️ Play';
+                    };
+
+                    utterance.onresume = () => {
+                        console.log('Speech synthesis resumed');
+                        this.isPlaying = true;
+                        this.elements.playBtn.textContent = '⏸️ Pause';
+                    };
+
+                    this.currentAudio = utterance;
+                    this.showStatus('Audio ready to play', 'completed');
+                    return Promise.resolve(utterance);
+                    
+                } catch (error) {
+                    console.error('Generate audio error:', error);
+                    this.showStatus('Error generating audio: ' + error.message, 'error');
+                    return Promise.reject(error);
+                } finally {
+                    this.setProcessing(false);
+                }
+            }
+
+            playAudio() {
+                try {
+                    console.log('Play button clicked, isPlaying:', this.isPlaying);
+                    
+                    if (this.isPlaying) {
+                        // Currently playing, so pause
+                        console.log('Pausing audio');
+                        speechSynthesis.pause();
+                        this.isPlaying = false;
+                        this.elements.playBtn.textContent = '▶️ Play';
+                        this.showStatus('Audio paused', 'completed');
+                        return;
+                    }
+                    
+                    // Not playing, check if we have paused audio to resume
+                    if (speechSynthesis.paused) {
+                        console.log('Resuming paused audio');
+                        speechSynthesis.resume();
+                        this.isPlaying = true;
+                        this.elements.playBtn.textContent = '⏸️ Pause';
+                        this.showStatus('Resuming audio...', 'processing');
+                        return;
+                    }
+                    
+                    // Start new audio
+                    if (this.currentAudio) {
+                        console.log('Playing existing audio');
+                        this.startNewAudio();
+                    } else {
+                        console.log('Generating new audio first');
+                        this.showStatus('Generating audio...', 'processing');
+                        this.generateAudio().then(() => {
+                            if (this.currentAudio) {
+                                console.log('Playing newly generated audio');
+                                this.startNewAudio();
+                            } else {
+                                this.showStatus('Failed to generate audio', 'error');
+                            }
+                        }).catch(error => {
+                            console.error('Generation error:', error);
+                            this.showStatus('Error: ' + error.message, 'error');
+                        });
+                    }
+                    
+                } catch (error) {
+                    console.error('Play audio error:', error);
+                    this.showStatus('Playback error: ' + error.message, 'error');
+                }
+            }
+            
+            startNewAudio() {
+                try {
+                    // Stop any existing speech
+                    speechSynthesis.cancel();
+                    
+                    // Update UI immediately
+                    this.isPlaying = true;
+                    this.elements.playBtn.textContent = '⏸️ Pause';
+                    this.showStatus('Starting audio...', 'processing');
+                    
+                    // Start speaking with a small delay
+                    setTimeout(() => {
+                        if (this.currentAudio && this.isPlaying) {
+                            console.log('Actually starting speech synthesis');
+                            speechSynthesis.speak(this.currentAudio);
+                        }
+                    }, 150);
+                    
+                } catch (error) {
+                    console.error('Start audio error:', error);
+                    this.isPlaying = false;
+                    this.elements.playBtn.textContent = '▶️ Play';
+                    this.showStatus('Error starting audio: ' + error.message, 'error');
+                }
+            }
+
+            pauseAudio() {
+                try {
+                    speechSynthesis.pause();
+                    this.isPlaying = false;
+                    this.elements.playBtn.textContent = '▶️ Play';
+                    this.showStatus('Audio paused', 'completed');
+                } catch (error) {
+                    this.showStatus('Pause error: ' + error.message, 'error');
+                }
+            }
+
+            stopAudio() {
+                try {
+                    speechSynthesis.cancel();
+                    this.isPlaying = false;
+                    this.elements.playBtn.textContent = '▶️ Play';
+                    this.showStatus('Audio stopped', 'completed');
+                } catch (error) {
+                    this.showStatus('Stop error: ' + error.message, 'error');
+                }
+            }
+
+            downloadAudio() {
+                if (!this.rewrittenText.trim()) {
+                    this.showStatus('No audio to download', 'error');
+                    return;
+                }
+
+                // Simulate MP3 download (in real implementation, this would be actual audio file)
+                const element = document.createElement('a');
+                const file = new Blob([this.rewrittenText], { type: 'text/plain' });
+                element.href = URL.createObjectURL(file);
+                element.download = `audiobook-${this.selectedTone}-tone.txt`;
+                element.click();
+                
+                this.showStatus('Audio content downloaded', 'completed');
+            }
+
+            setProcessing(processing) {
+                this.isProcessing = processing;
+                this.elements.rewriteBtn.disabled = processing;
+                this.elements.generateBtn.disabled = processing;
+            }
+
+            showStatus(message, type) {
+                this.elements.statusIndicator.textContent = message;
+                this.elements.statusIndicator.className = `status-indicator status-${type}`;
+                this.elements.statusIndicator.style.display = 'inline-block';
+                
+                if (type === 'completed' || type === 'error') {
+                    setTimeout(() => {
+                        this.elements.statusIndicator.style.display = 'none';
+                    }, 3000);
+                }
+            }
+
+            loadVoices() {
+                const loadVoicesHandler = () => {
+                    const voices = speechSynthesis.getVoices();
+                    console.log('Available voices:', voices.length);
+                    
+                    if (voices.length === 0) {
+                        // Retry loading voices
+                        setTimeout(loadVoicesHandler, 100);
+                        return;
+                    }
+                    
+                    // Clear existing system voices
+                    if (this.elements.systemVoices) {
+                        this.elements.systemVoices.innerHTML = '';
+                        
+                        // Add all available system voices
+                        voices.forEach((voice, index) => {
+                            const option = document.createElement('option');
+                            option.value = `system-${index}`;
+                            const flag = this.getLanguageFlag(voice.lang);
+                            const gender = this.getVoiceGender(voice.name);
+                            option.textContent = `${flag} ${voice.name} (${voice.lang}) ${gender}`;
+                            option.setAttribute('data-voice-name', voice.name);
+                            option.setAttribute('data-voice-lang', voice.lang);
+                            this.elements.systemVoices.appendChild(option);
+                        });
+                    }
+                };
+
+                loadVoicesHandler();
+                speechSynthesis.onvoiceschanged = loadVoicesHandler;
+            }
+
+            getLanguageFlag(lang) {
+                const flagMap = {
+                    'en-US': '🇺🇸', 'en-GB': '🇬🇧', 'en-AU': '🇦🇺', 'en-CA': '🇨🇦',
+                    'es-ES': '🇪🇸', 'es-MX': '🇲🇽', 'fr-FR': '🇫🇷', 'fr-CA': '🇨🇦',
+                    'de-DE': '🇩🇪', 'it-IT': '🇮🇹', 'pt-BR': '🇧🇷', 'pt-PT': '🇵🇹',
+                    'ru-RU': '🇷🇺', 'ja-JP': '🇯🇵', 'ko-KR': '🇰🇷', 'zh-CN': '🇨🇳',
+                    'zh-HK': '🇭🇰', 'zh-TW': '🇹🇼', 'ar-SA': '🇸🇦', 'hi-IN': '🇮🇳',
+                    'nl-NL': '🇳🇱', 'sv-SE': '🇸🇪', 'da-DK': '🇩🇰', 'no-NO': '🇳🇴',
+                    'fi-FI': '🇫🇮', 'pl-PL': '🇵🇱', 'tr-TR': '🇹🇷', 'th-TH': '🇹🇭'
+                };
+                return flagMap[lang] || '🌍';
+            }
+
+            getVoiceGender(voiceName) {
+                const name = voiceName.toLowerCase();
+                const femaleNames = ['female', 'woman', 'zira', 'cortana', 'samantha', 'karen', 'susan', 'victoria', 'allison', 'lisa', 'sara', 'paulina', 'amelie', 'luciana'];
+                const maleNames = ['male', 'man', 'david', 'mark', 'alex', 'michael', 'daniel', 'thomas', 'jorge', 'nicolas'];
+                
+                if (femaleNames.some(fem => name.includes(fem))) return '👩';
+                if (maleNames.some(male => name.includes(male))) return '👨';
+                return '🤖';
+            }
+
+            selectBestVoice(voiceId) {
+                const voices = speechSynthesis.getVoices();
+                if (voices.length === 0) return null;
+
+                // Handle system voice selection
+                if (voiceId.startsWith('system-')) {
+                    const index = parseInt(voiceId.split('-')[1]);
+                    return voices[index] || voices[0];
+                }
+
+                // Enhanced voice matching for premium voices
+                const voicePatterns = {
+                    'lisa': {
+                        patterns: ['lisa', 'samantha', 'zira', 'karen', 'susan', 'female'],
+                        gender: 'female',
+                        priority: ['en-US', 'en-GB', 'en-AU']
+                    },
+                    'michael': {
+                        patterns: ['michael', 'david', 'alex', 'daniel', 'mark', 'male'],
+                        gender: 'male', 
+                        priority: ['en-US', 'en-GB', 'en-AU']
+                    },
+                    'allison': {
+                        patterns: ['allison', 'victoria', 'sara', 'amelie', 'female'],
+                        gender: 'female',
+                        priority: ['en-US', 'en-CA', 'en-GB']
+                    },
+                    'david': {
+                        patterns: ['david', 'daniel', 'thomas', 'jorge', 'male'],
+                        gender: 'male',
+                        priority: ['en-US', 'en-GB', 'es-ES']
+                    },
+                    'sarah': {
+                        patterns: ['sara', 'sarah', 'samantha', 'paulina', 'female'],
+                        gender: 'female', 
+                        priority: ['en-US', 'en-GB', 'es-MX']
+                    },
+                    'james': {
+                        patterns: ['james', 'alex', 'thomas', 'nicolas', 'male'],
+                        gender: 'male',
+                        priority: ['en-GB', 'en-US', 'fr-FR']
+                    }
+                };
+
+                if (voiceId === 'auto') {
+                    // Auto-select best English voice
+                    const englishVoices = voices.filter(v => v.lang.startsWith('en'));
+                    return englishVoices.find(v => v.default) || englishVoices[0] || voices[0];
+                }
+
+                const pattern = voicePatterns[voiceId];
+                if (!pattern) return voices[0];
+
+                // Try to find exact matches first
+                for (const lang of pattern.priority) {
+                    for (const namePattern of pattern.patterns) {
+                        const match = voices.find(v => 
+                            v.lang === lang && 
+                            v.name.toLowerCase().includes(namePattern)
+                        );
+                        if (match) return match;
+                    }
+                }
+
+                // Fallback: find by gender and language
+                for (const lang of pattern.priority) {
+                    const match = voices.find(v => {
+                        const name = v.name.toLowerCase();
+                        const isRightGender = pattern.gender === 'female' 
+                            ? ['female', 'woman'].some(g => name.includes(g))
+                            : ['male', 'man'].some(g => name.includes(g));
+                        return v.lang === lang && isRightGender;
+                    });
+                    if (match) return match;
+                }
+
+                // Final fallback
+                return voices.find(v => v.lang.startsWith('en')) || voices[0];
+            }
+
+            showVoiceInfo() {
+                const selectedVoice = this.selectBestVoice(this.elements.voiceSelect.value);
+                if (selectedVoice) {
+                    const info = `Selected: ${selectedVoice.name} (${selectedVoice.lang})`;
+                    this.showStatus(info, 'completed');
+                }
+            }
+
+            quickTest() {
+                try {
+                    console.log('Quick test started');
+                    
+                    // Stop any existing speech
+                    speechSynthesis.cancel();
+                    
+                    // Create simple utterance
+                    const testText = "Hello! This is a quick audio test. If you can hear this, the play button is working correctly.";
+                    const utterance = new SpeechSynthesisUtterance(testText);
+                    
+                    utterance.rate = 1.0;
+                    utterance.pitch = 1.0;
+                    utterance.volume = 0.8;
+                    
+                    utterance.onstart = () => {
+                        console.log('Quick test audio started');
+                        this.showStatus('Quick test playing...', 'processing');
+                    };
+                    
+                    utterance.onend = () => {
+                        console.log('Quick test audio ended');
+                        this.showStatus('Quick test completed successfully!', 'completed');
+                    };
+                    
+                    utterance.onerror = (e) => {
+                        console.error('Quick test error:', e);
+                        this.showStatus('Quick test failed: ' + (e.error || 'Unknown error'), 'error');
+                    };
+                    
+                    setTimeout(() => {
+                        speechSynthesis.speak(utterance);
+                        console.log('Quick test utterance sent to speech synthesis');
+                    }, 100);
+                    
+                } catch (error) {
+                    console.error('Quick test error:', error);
+                    this.showStatus('Quick test error: ' + error.message, 'error');
+                }
+            }
+
+            testVoice() {
+                try {
+                    const testText = "Hello! This is a voice test. The quick brown fox jumps over the lazy dog.";
+                    
+                    // Stop any current speech
+                    speechSynthesis.cancel();
+                    
+                    setTimeout(() => {
+                        const utterance = new SpeechSynthesisUtterance(testText);
+                        
+                        utterance.rate = Math.max(0.1, Math.min(10, parseFloat(this.elements.speedSlider.value) || 1.0));
+                        utterance.pitch = Math.max(0, Math.min(2, parseFloat(this.elements.pitchSlider.value) || 1.0));
+                        utterance.volume = Math.max(0, Math.min(1, parseFloat(this.elements.volumeSlider.value) / 100 || 0.8));
+                        
+                        const selectedVoice = this.selectBestVoice(this.elements.voiceSelect.value);
+                        if (selectedVoice) {
+                            utterance.voice = selectedVoice;
+                            console.log('Testing voice:', selectedVoice.name, selectedVoice.lang);
+                        }
+                        
+                        utterance.onstart = () => {
+                            this.showStatus('Testing voice...', 'processing');
+                            console.log('Voice test started');
+                        };
+                        
+                        utterance.onend = () => {
+                            this.showStatus('Voice test complete', 'completed');
+                            console.log('Voice test completed');
+                        };
+                        
+                        utterance.onerror = (e) => {
+                            this.showStatus('Voice test error: ' + (e.error || 'Unknown error'), 'error');
+                            console.error('Voice test error:', e);
+                        };
+                        
+                        // Check if speech synthesis is available
+                        if (typeof speechSynthesis === 'undefined') {
+                            throw new Error('Speech synthesis not supported in this browser');
+                        }
+                        
+                        speechSynthesis.speak(utterance);
+                    }, 100);
+                    
+                } catch (error) {
+                    this.showStatus('Test error: ' + error.message, 'error');
+                    console.error('Test voice error:', error);
+                }
+            }
+
+            runDiagnostics() {
+                try {
+                    const voices = speechSynthesis.getVoices();
+                    const selectedVoice = this.selectBestVoice(this.elements.voiceSelect.value);
+                    
+                    let debugText = `Speech Synthesis: ${typeof speechSynthesis !== 'undefined' ? '✓ Available' : '✗ Not Available'}\n`;
+                    debugText += `Total Voices: ${voices.length}\n`;
+                    debugText += `Selected Voice: ${selectedVoice ? selectedVoice.name + ' (' + selectedVoice.lang + ')' : 'None'}\n`;
+                    debugText += `Browser: ${navigator.userAgent.split(' ').slice(-1)[0]}\n`;
+                    debugText += `Speech Speaking: ${speechSynthesis.speaking}\n`;
+                    debugText += `Speech Pending: ${speechSynthesis.pending}\n`;
+                    debugText += `Speech Paused: ${speechSynthesis.paused}\n`;
+                    debugText += `Current Audio: ${this.currentAudio ? 'Ready' : 'None'}\n`;
+                    debugText += `Text Length: ${(this.rewrittenText || this.originalText || '').length} chars\n`;
+                    
+                    if (voices.length > 0) {
+                        debugText += `\nTop 5 Voices:\n`;
+                        voices.slice(0, 5).forEach((voice, i) => {
+                            debugText += `${i + 1}. ${voice.name} (${voice.lang}) ${voice.default ? '[DEFAULT]' : ''}\n`;
+                        });
+                    }
+                    
+                    // Check if debug element exists before setting content
+                    if (this.elements.debugInfo) {
+                        this.elements.debugInfo.textContent = debugText;
+                        this.showStatus('Diagnostics complete', 'completed');
+                    } else {
+                        console.log('Debug Info:', debugText);
+                        this.showStatus('Debug panel not found, check console', 'error');
+                    }
+                    
+                } catch (error) {
+                    console.error('Diagnostic error:', error);
+                    if (this.elements.debugInfo) {
+                        this.elements.debugInfo.textContent = 'Diagnostic error: ' + error.message;
+                    }
+                    this.showStatus('Diagnostic failed: ' + error.message, 'error');
+                }
+            }
+
+            async waitForVoices() {
+                return new Promise((resolve) => {
+                    let voices = speechSynthesis.getVoices();
+                    if (voices.length > 0) {
+                        resolve(voices);
+                        return;
+                    }
+                    
+                    const checkVoices = () => {
+                        voices = speechSynthesis.getVoices();
+                        if (voices.length > 0) {
+                            resolve(voices);
+                        } else {
+                            setTimeout(checkVoices, 100);
+                        }
+                    };
+                    
+                    speechSynthesis.onvoiceschanged = checkVoices;
+                    checkVoices();
+                });
+            }
+        }
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', () => {
+            window.advancedApp = new AdvancedAudiobookCreator();
+        });
+    </script>
+</body>
+</html>
